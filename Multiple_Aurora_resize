@@ -1,0 +1,33 @@
+- hosts: localhost
+  connection: local
+  vars:
+     numbers:  "{{number}}"
+  tasks:
+   - name: resize instances { RDS }
+     rds:
+       command: modify
+       instance_name: "{{ instance_name[item] }}"
+       instance_type: "{{ instance_type[item] }}"      
+       aws_access_key: "{{access_key}}"
+       aws_secret_key: "{{secret_key}}"
+       region: ap-south-1
+       wait: yes
+       apply_immediately: yes
+     with_items: "{{numbers}}"
+     
+
+   - pause:
+       seconds: 40
+ 
+   - name: get fact for instance availble state
+     rds:
+       command: facts
+       instance_name: "{{ item }}"
+       aws_access_key: "{{access_key}}"
+       aws_secret_key: "{{secret_key}}"
+       region: ap-south-1
+     register: new_facts
+     with_items: "{{ instance_name }}"
+     until: new_facts.instance.status == "available"
+     retries: 25
+     delay: 60
